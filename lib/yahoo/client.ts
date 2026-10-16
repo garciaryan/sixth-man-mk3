@@ -18,9 +18,11 @@ export class NeedsReconnectError extends Error {
 export type YahooClient = { get(path: string): Promise<unknown> };
 type Throttle = { nextAt: number };
 
-// Shared by every client in the process, so the sync and sign-in never exceed the rate together.
-const sharedThrottle: Throttle = { nextAt: 0 };
-let queue: Promise<unknown> = Promise.resolve();
+// Shared by every client in the process, so the sync and sign-in never exceed the rate together. Kept on globalThis
+// because Next's middleware and route handlers are separate bundles, each with its own copy of this module.
+const g = globalThis as typeof globalThis & { __sixthYahoo?: { throttle: Throttle; queue: Promise<unknown> } };
+g.__sixthYahoo ??= { throttle: { nextAt: 0 }, queue: Promise.resolve() };
+const shared = g.__sixthYahoo;
 
 export function createClient(deps: {
   db: DatabaseSync;
@@ -35,16 +37,20 @@ export function createClient(deps: {
   const fetchFn = deps.fetchFn ?? fetch;
   const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const now = deps.now ?? Date.now;
-  const throttle = deps.throttle ?? sharedThrottle;
+  const throttle = deps.throttle ?? shared.throttle;
 
   async function token(): Promise<string> {
     if (deps.accessToken) return deps.accessToken;
     const s = getService(deps.db);
     if (!s || s.status !== "ok") throw new NeedsReconnectError();
     if (s.expiresAt - now() >= REFRESH_EARLY_MS) return s.accessToken;
+    return refresh(s.guid, s.refreshToken);
+  }
+
+  async function refresh(guid: string, refreshToken: string): Promise<string> {
     try {
-      const t = await refreshTokens(deps.cfg, s.refreshToken, fetchFn, now());
-      saveService(deps.db, s.guid, t);
+      const t = await refreshTokens(deps.cfg, refreshToken, fetchFn, now());
+      saveService(deps.db, guid, t);
       return t.accessToken;
     } catch (e) {
       if (e instanceof YahooAuthError && e.code === "invalid_grant") {
@@ -63,11 +69,20 @@ export function createClient(deps: {
 
   async function request(path: string): Promise<unknown> {
     const url = `${API_BASE}${path}${path.includes("?") ? "&" : "?"}format=json`;
+    let refreshed = false;
     for (let attempt = 0; ; attempt++) {
       const access = await token();
       await slot();
       const res = await fetchFn(url, { headers: { authorization: `Bearer ${access}` } });
       if (res.ok) return res.json();
+      // Yahoo can revoke an access token before it expires: refresh once and try again.
+      const s = deps.accessToken ? null : getService(deps.db);
+      if (res.status === 401 && !refreshed && s) {
+        refreshed = true;
+        await refresh(s.guid, s.refreshToken);
+        attempt--;
+        continue;
+      }
       const retryable = res.status === 429 || res.status >= 500;
       if (!retryable || attempt >= BACKOFF_MS.length) throw new Error(`Yahoo request failed (${res.status}) for ${path}`);
       await sleep(BACKOFF_MS[attempt]);
@@ -76,8 +91,8 @@ export function createClient(deps: {
 
   return {
     get(path) {
-      const run = queue.then(() => request(path));
-      queue = run.catch(() => undefined);
+      const run = shared.queue.then(() => request(path));
+      shared.queue = run.catch(() => undefined);
       return run;
     },
   };

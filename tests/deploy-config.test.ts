@@ -26,3 +26,10 @@ test("the image is Node 24 running the standalone server", () => {
   assert.match(docker, /FROM node:24-slim/);
   assert.match(docker, /\.next\/standalone/);
 });
+
+test("DEPLOY.md warns that auto-suspend can interrupt the first backfill", () => {
+  const deploy = read("DEPLOY.md");
+  assert.match(deploy, /auto-suspend/);
+  assert.match(deploy, /Sync now/);
+  assert.match(deploy, /min_machines_running = 1/);
+});

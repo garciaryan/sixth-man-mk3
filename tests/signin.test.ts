@@ -70,6 +70,13 @@ test("a failed teams lookup is a leagues error", async () => {
   assert.deepEqual(await t.result, { kind: "error", code: "leagues" });
 });
 
+test("the admin still gets in when the teams lookup fails, without a team", async () => {
+  const t = run("ADMINGUID", { teams: new Response("", { status: 404 }) });
+  assert.deepEqual(await t.result, { kind: "ok", guid: "ADMINGUID" });
+  assert.equal(getUser(t.db, "ADMINGUID")?.teamKey, null);
+  assert.equal(getService(t.db)?.accessToken, "UAT");
+});
+
 test("membership is re-checked after 24 hours", () => {
   assert.equal(RECHECK_MS, 24 * 3600 * 1000);
   assert.equal(needsRecheck({ checkedAt: NOW }, NOW + RECHECK_MS - 1), false);

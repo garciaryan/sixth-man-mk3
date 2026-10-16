@@ -46,7 +46,8 @@ export async function completeSignIn(
       const teams = await getUserTeams(client);
       teamKey = teams.find((t) => t.teamKey.startsWith(`${leagueKey}.t.`))?.teamKey ?? null;
     } catch {
-      return { kind: "error", code: "leagues" };
+      // The admin gets in without a team, so a Yahoo outage can't lock them out of setup.
+      if (!isAdmin) return { kind: "error", code: "leagues" };
     }
   }
   // The admin always gets in (to fix setup); everyone else needs a team in the league.

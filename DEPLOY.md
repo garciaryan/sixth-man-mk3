@@ -48,6 +48,11 @@ In the GitHub repo settings:
 `.github/workflows/sync-cron.yml` runs at 10:00 UTC and can also be run by hand from the Actions tab. If a run is
 missed, the first page visit afterwards catches up.
 
+The first sync backfills every date since the season started, about one request per second per date. Mid-season that
+can take long enough for Fly's auto-suspend to stop the machine part way, and `/settings` then shows the run as
+interrupted. Nothing is lost: each run resumes at the first missing date. Press **Sync now** again until it finishes,
+or set `min_machines_running = 1` in `fly.toml` and `fly deploy` for the backfill, then set it back to 0.
+
 ## 5. First sign-in
 
 1. Open the app and sign in with Yahoo as the admin.

@@ -65,6 +65,11 @@ export async function runSync(deps: SyncDeps): Promise<SyncResult> {
   return result;
 }
 
+/** At boot: a run still marked running was cut off when the process stopped. */
+export function markInterruptedRuns(db: DatabaseSync): void {
+  db.prepare("UPDATE sync_runs SET status = 'interrupted' WHERE status = 'running'").run();
+}
+
 export function lastRuns(db: DatabaseSync, limit: number): SyncRun[] {
   const rows = db.prepare("SELECT * FROM sync_runs ORDER BY id DESC LIMIT ?").all(limit) as Record<string, string | number | null>[];
   return rows.map((r) => ({

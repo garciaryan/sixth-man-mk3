@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { migrate, migrations } from "../lib/migrations.ts";
 import { getGames, getLeague, getPickedLeagueKey, getPlayers, getSyncState, getTeams, pickLeague } from "../lib/store.ts";
-import { runSync, lastRuns } from "../lib/sync/run.ts";
+import { runSync, lastRuns, markInterruptedRuns } from "../lib/sync/run.ts";
 import { createWorker, syncRequest } from "../lib/sync/worker.ts";
 import { NeedsReconnectError } from "../lib/yahoo/client.ts";
 import { fixture } from "./helpers/fixtures.ts";
@@ -169,4 +169,12 @@ test("the sync endpoint needs the right bearer token", () => {
   const ok = syncRequest("Bearer secret", "secret", start);
   assert.equal(ok.status, 202);
   assert.deepEqual(ok.body, { started: true, running: true });
+});
+
+test("at boot, runs left running by a stopped process are marked interrupted", async () => {
+  const db = fresh();
+  await runSync({ db, client: fakeClient(), leagueKey: LEAGUE, now: NOW });
+  db.prepare("INSERT INTO sync_runs (started_at, status) VALUES (?, 'running')").run(NOW.getTime());
+  markInterruptedRuns(db);
+  assert.deepEqual(lastRuns(db, 2).map((r) => r.status), ["interrupted", "ok"]);
 });

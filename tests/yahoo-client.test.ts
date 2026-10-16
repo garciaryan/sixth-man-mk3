@@ -84,3 +84,47 @@ test("no connection at all needs reconnect", async () => {
   t.db.prepare("DELETE FROM yahoo_auth").run();
   await assert.rejects(t.client.get("/a"), NeedsReconnectError);
 });
+
+test("separate copies of the client module share one rate limit, as the middleware and routes bundles do", async () => {
+  // A query string loads a second, independent instance of the module, like Next's separate bundles.
+  const copy = new URL("../lib/yahoo/client.ts?copy", import.meta.url).href;
+  const other = (await import(copy)) as typeof import("../lib/yahoo/client.ts");
+  const db = new DatabaseSync(":memory:");
+  migrate(db, migrations);
+  let clock = 9_000_000_000_000;
+  saveService(db, "G", { accessToken: "AT", refreshToken: "RT", expiresAt: clock + HOUR });
+  const sleeps: number[] = [];
+  const s = stubFetch([json({}), json({})]);
+  const deps = { db, cfg, fetchFn: s.fetch, now: () => clock, sleep: async (ms: number) => { sleeps.push(ms); clock += ms; } };
+  await createClient(deps).get("/a");
+  await other.createClient(deps).get("/b");
+  assert.deepEqual(sleeps, [1000]);
+});
+
+test("a 401 refreshes the token once and retries", async () => {
+  const t = setup([
+    new Response("", { status: 401 }),
+    json({ access_token: "AT2", refresh_token: "RT2", expires_in: 3600 }),
+    json({ ok: 1 }),
+  ]);
+  assert.deepEqual(await t.client.get("/a"), { ok: 1 });
+  assert.equal(t.calls[1].url, "https://api.login.yahoo.com/oauth2/get_token");
+  assert.equal(t.calls[2].headers.authorization, "Bearer AT2");
+  assert.equal(getService(t.db)?.accessToken, "AT2");
+});
+
+test("a 401 whose refresh is refused marks the connection for reconnect", async () => {
+  const t = setup([new Response("", { status: 401 }), json({ error: "invalid_grant" }, 400)]);
+  await assert.rejects(t.client.get("/a"), NeedsReconnectError);
+  assert.equal(getService(t.db)?.status, "needs_reconnect");
+});
+
+test("a second 401 after a refresh fails without refreshing again", async () => {
+  const t = setup([
+    new Response("", { status: 401 }),
+    json({ access_token: "AT2", refresh_token: "RT2", expires_in: 3600 }),
+    new Response("", { status: 401 }),
+  ]);
+  await assert.rejects(t.client.get("/a"), /401/);
+  assert.equal(t.calls.length, 3);
+});
