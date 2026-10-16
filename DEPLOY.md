@@ -10,7 +10,7 @@ syncs stats nightly.
 3. Redirect URI(s): `https://sixth-man.fly.dev/api/auth/callback`. For local development, also add
    `https://localhost:3000/api/auth/callback`. Yahoo only accepts HTTPS. If it refuses the localhost URI, develop
    against the deployed app instead.
-4. API permissions: **OpenID Connect** (Profile) and **Fantasy Sports: Read**.
+4. API permissions: **Fantasy Sports: Read** is required. **OpenID Connect** (Profile) is optional; with it, managers' names come from Yahoo, and without it they show as "Manager".
 5. Note the **Client ID** and **Client Secret**.
 
 ## 2. Local development (optional)

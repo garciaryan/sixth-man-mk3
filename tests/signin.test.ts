@@ -96,3 +96,24 @@ test("a failed exchange logs Yahoo's reason", async () => {
   }
   assert.match(logged.map((a) => a.join(" ")).join("\n"), /redirect_uri mismatch/);
 });
+
+test("the GUID from the token response is used without calling userinfo", async () => {
+  const db = new DatabaseSync(":memory:");
+  migrate(db, migrations);
+  const s = stubFetch([
+    json({ access_token: "UAT", refresh_token: "URT", expires_in: 3600, xoauth_yahoo_guid: "MEMBERGUID" }),
+    json(fixture("user-teams")),
+  ]);
+  const r = await completeSignIn({ db, cfg, leagueKey: "466.l.1001", adminGuid: "ADMINGUID", fetchFn: s.fetch, now: NOW, throttle: { nextAt: 0 } }, "CODE");
+  assert.deepEqual(r, { kind: "ok", guid: "MEMBERGUID" });
+  assert.ok(!s.calls.some((c) => c.url.includes("userinfo")));
+  assert.equal(getUser(db, "MEMBERGUID")?.name, "Manager");
+});
+
+test("without a GUID in the token response, a refused userinfo is a userinfo error", async () => {
+  const db = new DatabaseSync(":memory:");
+  migrate(db, migrations);
+  const s = stubFetch([json({ access_token: "UAT", refresh_token: "URT", expires_in: 3600 }), new Response("", { status: 403 })]);
+  const r = await completeSignIn({ db, cfg, leagueKey: "466.l.1001", adminGuid: "ADMINGUID", fetchFn: s.fetch, now: NOW, throttle: { nextAt: 0 } }, "CODE");
+  assert.deepEqual(r, { kind: "error", code: "userinfo" });
+});

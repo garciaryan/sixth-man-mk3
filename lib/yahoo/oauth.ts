@@ -2,6 +2,8 @@
 
 export type Tokens = { accessToken: string; refreshToken: string; expiresAt: number };
 export type OAuthConfig = { clientId: string; clientSecret: string; redirectUri: string };
+/** Who signed in, as Yahoo's token response says (no extra call). */
+export type Identity = { guid: string; name: string | null };
 
 const AUTHORIZE = "https://api.login.yahoo.com/oauth2/request_auth";
 const TOKEN = "https://api.login.yahoo.com/oauth2/get_token";
@@ -22,7 +24,7 @@ export function authorizeUrl(cfg: Pick<OAuthConfig, "clientId" | "redirectUri">,
   return `${AUTHORIZE}?${q}`;
 }
 
-async function tokenRequest(cfg: OAuthConfig, form: Record<string, string>, fetchFn: typeof fetch, now: number, oldRefresh?: string): Promise<Tokens> {
+async function tokenRequest(cfg: OAuthConfig, form: Record<string, string>, fetchFn: typeof fetch, now: number, oldRefresh?: string): Promise<{ tokens: Tokens; body: Record<string, unknown> }> {
   const res = await fetchFn(TOKEN, {
     method: "POST",
     headers: {
@@ -43,15 +45,33 @@ async function tokenRequest(cfg: OAuthConfig, form: Record<string, string>, fetc
   if (typeof body.access_token !== "string" || !refreshToken) {
     throw new YahooAuthError("http", `Yahoo returned no ${typeof body.access_token !== "string" ? "access" : "refresh"} token.`);
   }
-  return { accessToken: body.access_token, refreshToken, expiresAt: now + Number(body.expires_in ?? 3600) * 1000 };
+  return { tokens: { accessToken: body.access_token, refreshToken, expiresAt: now + Number(body.expires_in ?? 3600) * 1000 }, body };
 }
 
-export function exchangeCode(cfg: OAuthConfig, code: string, fetchFn: typeof fetch = fetch, now = Date.now()): Promise<Tokens> {
-  return tokenRequest(cfg, { grant_type: "authorization_code", code }, fetchFn, now);
+export async function exchangeCode(
+  cfg: OAuthConfig, code: string, fetchFn: typeof fetch = fetch, now = Date.now(),
+): Promise<Tokens & { identity: Identity | null }> {
+  const { tokens, body } = await tokenRequest(cfg, { grant_type: "authorization_code", code }, fetchFn, now);
+  return { ...tokens, identity: identityFrom(body) };
 }
 
-export function refreshTokens(cfg: OAuthConfig, refreshToken: string, fetchFn: typeof fetch = fetch, now = Date.now()): Promise<Tokens> {
-  return tokenRequest(cfg, { grant_type: "refresh_token", refresh_token: refreshToken }, fetchFn, now, refreshToken);
+export async function refreshTokens(cfg: OAuthConfig, refreshToken: string, fetchFn: typeof fetch = fetch, now = Date.now()): Promise<Tokens> {
+  return (await tokenRequest(cfg, { grant_type: "refresh_token", refresh_token: refreshToken }, fetchFn, now, refreshToken)).tokens;
+}
+
+/** The GUID from the id_token's `sub` (OpenID), else Yahoo's `xoauth_yahoo_guid`. The id_token came straight from
+ * Yahoo's token endpoint over TLS, so its claims are read without checking the signature. */
+function identityFrom(body: Record<string, unknown>): Identity | null {
+  if (typeof body.id_token === "string") {
+    try {
+      const claims = JSON.parse(Buffer.from(body.id_token.split(".")[1] ?? "", "base64url").toString("utf8")) as Record<string, unknown>;
+      const name = [claims.name, claims.nickname, claims.given_name].find((v): v is string => typeof v === "string") ?? null;
+      if (typeof claims.sub === "string" && claims.sub) return { guid: claims.sub, name };
+    } catch {
+      // not a JWT; fall through
+    }
+  }
+  return typeof body.xoauth_yahoo_guid === "string" && body.xoauth_yahoo_guid ? { guid: body.xoauth_yahoo_guid, name: null } : null;
 }
 
 export async function fetchGuid(accessToken: string, fetchFn: typeof fetch = fetch): Promise<{ guid: string; name: string }> {

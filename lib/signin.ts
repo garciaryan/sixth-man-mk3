@@ -24,19 +24,24 @@ export async function completeSignIn(
   const fetchFn = deps.fetchFn ?? fetch;
   const now = deps.now ?? Date.now();
 
-  let tokens: Tokens;
+  let tokens: Tokens & { identity: { guid: string; name: string | null } | null };
   try {
     tokens = await exchangeCode(cfg, code, fetchFn, now);
   } catch (e) {
     console.error("sign-in: code exchange failed:", e instanceof Error ? e.message : e);
     return { kind: "error", code: "exchange" };
   }
+  // Yahoo's token response names who signed in; userinfo (which needs the OpenID profile permission) is the fallback.
   let who: { guid: string; name: string };
-  try {
-    who = await fetchGuid(tokens.accessToken, fetchFn);
-  } catch (e) {
-    console.error("sign-in: userinfo failed:", e instanceof Error ? e.message : e);
-    return { kind: "error", code: "userinfo" };
+  if (tokens.identity) {
+    who = { guid: tokens.identity.guid, name: tokens.identity.name ?? "Manager" };
+  } else {
+    try {
+      who = await fetchGuid(tokens.accessToken, fetchFn);
+    } catch (e) {
+      console.error("sign-in: userinfo failed:", e instanceof Error ? e.message : e);
+      return { kind: "error", code: "userinfo" };
+    }
   }
   const isAdmin = adminGuid !== "" && who.guid === adminGuid;
   const leagueName = getLeague(db)?.name ?? null;

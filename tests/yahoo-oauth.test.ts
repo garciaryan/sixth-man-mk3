@@ -18,7 +18,7 @@ test("authorize URL carries client, redirect, scope and state", () => {
 test("exchangeCode posts the code with Basic auth and maps expiry", async () => {
   const s = stubFetch([json({ access_token: "AT", refresh_token: "RT", expires_in: 3600 })]);
   const t = await exchangeCode(cfg, "CODE", s.fetch, 1_000);
-  assert.deepEqual(t, { accessToken: "AT", refreshToken: "RT", expiresAt: 1_000 + 3_600_000 });
+  assert.deepEqual(t, { accessToken: "AT", refreshToken: "RT", expiresAt: 1_000 + 3_600_000, identity: null });
   const c = s.calls[0];
   assert.equal(c.url, "https://api.login.yahoo.com/oauth2/get_token");
   assert.equal(c.method, "POST");
@@ -57,4 +57,23 @@ test("token errors carry Yahoo's status and description for the logs", async () 
   const s = stubFetch([json({ error: "invalid_client", error_description: "client authentication failed" }, 401)]);
   await assert.rejects(exchangeCode(cfg, "C", s.fetch, 0), (e: unknown) =>
     e instanceof YahooAuthError && /401/.test(e.message) && /invalid_client/.test(e.message) && /client authentication failed/.test(e.message));
+});
+
+const idToken = (claims: Record<string, unknown>) =>
+  `${Buffer.from('{"alg":"ES256"}').toString("base64url")}.${Buffer.from(JSON.stringify(claims)).toString("base64url")}.sig`;
+
+test("exchangeCode reads who signed in from the id_token", async () => {
+  const s = stubFetch([json({ access_token: "AT", refresh_token: "RT", expires_in: 3600, xoauth_yahoo_guid: "XG", id_token: idToken({ sub: "SUBG", name: "Ryan G" }) })]);
+  const t = await exchangeCode(cfg, "C", s.fetch, 0);
+  assert.deepEqual(t.identity, { guid: "SUBG", name: "Ryan G" });
+});
+
+test("exchangeCode falls back to xoauth_yahoo_guid without an id_token", async () => {
+  const s = stubFetch([json({ access_token: "AT", refresh_token: "RT", expires_in: 3600, xoauth_yahoo_guid: "XG" })]);
+  assert.deepEqual((await exchangeCode(cfg, "C", s.fetch, 0)).identity, { guid: "XG", name: null });
+});
+
+test("exchangeCode has no identity when Yahoo sends neither", async () => {
+  const s = stubFetch([json({ access_token: "AT", refresh_token: "RT", expires_in: 3600, id_token: "not-a-jwt" })]);
+  assert.equal((await exchangeCode(cfg, "C", s.fetch, 0)).identity, null);
 });
