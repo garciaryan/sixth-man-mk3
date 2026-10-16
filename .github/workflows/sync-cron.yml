@@ -1,0 +1,17 @@
+# Nightly stats sync. The request also wakes the suspended Fly machine; the app syncs in the background and
+# answers 202 at once. A missed run heals itself: the first page visit after it catches up.
+name: Nightly sync
+on:
+  schedule:
+    - cron: '0 10 * * *' # 10:00 UTC, after late West Coast games
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start the sync
+        env:
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+          APP_URL: ${{ vars.APP_URL }}
+        run: curl --fail --show-error --silent --max-time 60 -X POST -H "Authorization: Bearer $SYNC_TOKEN" "$APP_URL/api/sync"

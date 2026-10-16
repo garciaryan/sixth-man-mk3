@@ -1,0 +1,11 @@
+node_modules
+.next
+.env*
+data
+.git
+.claude
+.superpowers
+docs
+tests
+scripts
+tsconfig.tsbuildinfo
