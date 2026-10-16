@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { fantasyPoints, aggregate, bestIndex } from "../lib/scoring.ts";
+import { fantasyPoints, aggregate, bestIndex, type GameRow } from "../lib/scoring.ts";
 
 const mods = { "12": 1, "15": 1.2, "16": 1.5, "19": -1 }; // PTS, REB, AST, TO
 
@@ -9,7 +9,7 @@ test("fantasyPoints applies modifiers and ignores stats without one", () => {
 });
 
 test("aggregate sums games inside the range", () => {
-  const games = [
+  const games: GameRow[] = [
     { date: "2026-11-01", stats: { "12": 20, "15": 10, "16": 5, "19": 3 } },
     { date: "2026-11-03", stats: { "12": 10, "15": 0, "16": 0, "19": 1 } },
     { date: "2026-10-01", stats: { "12": 50 } }, // outside range
