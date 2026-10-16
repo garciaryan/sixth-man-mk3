@@ -1,0 +1,25 @@
+{
+  "name": "sixth-man",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "dev": "next dev --experimental-https",
+    "build": "next build",
+    "start": "next start",
+    "test": "node --experimental-strip-types --no-warnings --test \"tests/*.test.ts\"",
+    "typecheck": "tsc --noEmit",
+    "capture": "node --env-file=.env.local --experimental-strip-types --no-warnings scripts/capture-fixtures.ts"
+  },
+  "dependencies": {
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "typescript": "^5.6.0"
+  }
+}
