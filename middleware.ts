@@ -24,7 +24,7 @@ export async function middleware(req: NextRequest) {
     return res;
   }
   const result = gate(
-    { path, session },
+    { path, search: req.nextUrl.search, session },
     { adminGuid: env.adminGuid, setupDone: isSetupDone(db, env.leagueKey) },
   );
   switch (result.kind) {

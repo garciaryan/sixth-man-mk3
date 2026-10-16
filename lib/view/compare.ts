@@ -9,8 +9,10 @@ const SPARK_GAMES = 15;
 
 export type CompareRow = { group: "fpts" | "stats" | "points"; label: string; title?: string; values: (number | null)[]; best: number | null };
 
-export function parseCompareKeys(p: string | null): { keys: string[] } | { error: "too_few" | "too_many" } {
-  const keys = [...new Set((p ?? "").split(",").map((k) => k.trim()).filter(Boolean))];
+/** `p` is the raw query value: missing, one string, or several (`?p=a&p=b`). */
+export function parseCompareKeys(p: string | string[] | null | undefined): { keys: string[] } | { error: "too_few" | "too_many" } {
+  const raw = Array.isArray(p) ? p.join(",") : p ?? "";
+  const keys = [...new Set(raw.split(",").map((k) => k.trim()).filter(Boolean))];
   if (keys.length < MIN_COMPARE) return { error: "too_few" };
   if (keys.length > MAX_COMPARE) return { error: "too_many" };
   return { keys };

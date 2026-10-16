@@ -8,10 +8,10 @@ export const dynamic = "force-dynamic";
 
 const MESSAGES = { too_few: "Pick at least 2 different players to compare.", too_many: "You can compare up to 4 players at once." };
 
-export default async function ComparePage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+export default async function ComparePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const sp = await searchParams;
   const window = isWindowId(sp.window) ? sp.window : "season";
-  const parsed = parseCompareKeys(sp.p ?? null);
+  const parsed = parseCompareKeys(sp.p);
   const back = <a href="/players">Back to players</a>;
   if ("error" in parsed) {
     return <main className="page"><h1>Compare</h1><p>{MESSAGES[parsed.error]} {back}</p></main>;

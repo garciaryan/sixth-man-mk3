@@ -10,6 +10,7 @@ test("compare keys: 2 to 4 distinct players", () => {
   assert.deepEqual(parseCompareKeys(""), { error: "too_few" });
   assert.deepEqual(parseCompareKeys("a,b,c,d,e"), { error: "too_many" });
   assert.deepEqual(parseCompareKeys(" a, b ,a,"), { keys: ["a", "b"] });
+  assert.deepEqual(parseCompareKeys(["a", "b,c"]), { keys: ["a", "b", "c"] }); // ?p=a&p=b,c
 });
 
 const NOW = new Date("2026-11-05T15:00:00Z"); // yesterday 2026-11-04

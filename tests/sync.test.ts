@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { migrate, migrations } from "../lib/migrations.ts";
-import { getGames, getLeague, getPlayers, getSyncState, getTeams } from "../lib/store.ts";
+import { getGames, getLeague, getPickedLeagueKey, getPlayers, getSyncState, getTeams, pickLeague } from "../lib/store.ts";
 import { runSync, lastRuns } from "../lib/sync/run.ts";
 import { createWorker, syncRequest } from "../lib/sync/worker.ts";
 import { NeedsReconnectError } from "../lib/yahoo/client.ts";
@@ -55,12 +55,13 @@ test("a fresh sync stores league data and every date from the season start to ye
   assert.equal(lastRuns(db, 5)[0].status, "ok");
 });
 
-test("a second run has nothing new to sync", async () => {
+test("every run re-syncs the last two dates so late games and stat corrections land", async () => {
   const db = fresh();
   await runSync({ db, client: fakeClient(), leagueKey: LEAGUE, now: NOW });
   const client = fakeClient();
-  assert.deepEqual(await runSync({ db, client, leagueKey: LEAGUE, now: NOW }), { datesSynced: 0, status: "ok" });
-  assert.deepEqual(client.dates(), []);
+  assert.deepEqual(await runSync({ db, client, leagueKey: LEAGUE, now: NOW }), { datesSynced: 2, status: "ok" });
+  assert.deepEqual(client.dates(), ["2026-10-22", "2026-10-23"]);
+  assert.equal(getSyncState(db).lastDate, "2026-10-23");
 });
 
 test("a failure keeps the last good date and the next run resumes there", async () => {
@@ -121,6 +122,36 @@ test("catch-up starts only when behind and no sync failed in the last 15 minutes
   assert.equal(ok.maybeCatchUp(), true);
   await ok.current();
   assert.equal(ok.maybeCatchUp(), false, "up to date");
+});
+
+test("catch-up does nothing before the season starts or after it ends", async () => {
+  const db = fresh();
+  const pre = createWorker(() => ({ db, client: fakeClient(), leagueKey: LEAGUE, now: new Date("2026-10-16T15:00:00Z") }));
+  assert.equal(pre.maybeCatchUp(), true, "first run fetches the league settings");
+  await pre.current();
+  assert.equal(pre.maybeCatchUp(), false, "season hasn't started");
+  const post = createWorker(() => ({ db, client: fakeClient(), leagueKey: LEAGUE, now: new Date("2027-05-01T15:00:00Z") }));
+  assert.equal(post.maybeCatchUp(), true, "behind: the season has dates to sync");
+  await post.current();
+  assert.equal(getSyncState(db).lastDate, "2027-04-12");
+  assert.equal(post.maybeCatchUp(), false, "season is over and fully synced");
+});
+
+test("a run stops writing once the admin switches leagues", async () => {
+  const db = fresh();
+  db.prepare("INSERT INTO league_settings (id, league_key) VALUES (1, ?)").run(LEAGUE);
+  const client = fakeClient();
+  const get = client.get;
+  client.get = async (p: string) => {
+    if (p.includes("date=2026-10-21")) pickLeague(db, "466.l.2002");
+    return get(p);
+  };
+  const r = await runSync({ db, client, leagueKey: LEAGUE, now: NOW });
+  assert.equal(r.status, "error");
+  assert.match(r.error!, /league changed/i);
+  assert.equal(getPickedLeagueKey(db), "466.l.2002");
+  assert.equal(getSyncState(db).lastDate, null);
+  assert.equal(getLeague(db), null);
 });
 
 test("catch-up does nothing without a league or a working connection", () => {

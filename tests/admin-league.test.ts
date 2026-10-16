@@ -6,11 +6,11 @@ import { getPickedLeagueKey } from "../lib/store.ts";
 import { chooseLeague } from "../lib/admin.ts";
 import { fixture } from "./helpers/fixtures.ts";
 
-function setup(envLeagueKey: string | null = null) {
+function setup(envLeagueKey: string | null = null, running = false) {
   const db = new DatabaseSync(":memory:");
   migrate(db, migrations);
   let started = 0;
-  const deps = { db, client: { get: async () => fixture("user-leagues") }, envLeagueKey, start: () => { started++; } };
+  const deps = { db, client: { get: async () => fixture("user-leagues") }, envLeagueKey, isRunning: () => running, start: () => { started++; } };
   return { db, deps, started: () => started };
 }
 
@@ -31,4 +31,10 @@ test("one of the admin's leagues is saved and a sync starts", async () => {
 test("LEAGUE_KEY in the environment can't be overridden", async () => {
   const t = setup("466.l.1001");
   assert.deepEqual(await chooseLeague(t.deps, "466.l.2002"), { ok: false, error: "LEAGUE_KEY is set in the environment." });
+});
+
+test("leagues can't be switched while a sync runs", async () => {
+  const t = setup(null, true);
+  assert.deepEqual(await chooseLeague(t.deps, "466.l.1001"), { ok: false, error: "A sync is running. Try again when it finishes." });
+  assert.equal(getPickedLeagueKey(t.db), null);
 });

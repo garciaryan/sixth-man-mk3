@@ -12,7 +12,7 @@ const matches = (path: string, prefixes: string[]) =>
   prefixes.some((p) => (p.endsWith("/") ? path.startsWith(p) : path === p || path.startsWith(`${p}/`)));
 
 export function gate(
-  req: { path: string; session: { guid: string } | null },
+  req: { path: string; search?: string; session: { guid: string } | null },
   ctx: { adminGuid: string; setupDone: boolean },
 ): GateResult {
   const { path, session } = req;
@@ -21,7 +21,7 @@ export function gate(
   if (!session) {
     return api
       ? { kind: "json", status: 401, body: { error: "Sign in first." } }
-      : { kind: "redirect", location: `/login?next=${encodeURIComponent(path)}` };
+      : { kind: "redirect", location: `/login?next=${encodeURIComponent(path + (req.search ?? ""))}` };
   }
   const isAdmin = ctx.adminGuid !== "" && session.guid === ctx.adminGuid;
   if (matches(path, ADMIN)) {

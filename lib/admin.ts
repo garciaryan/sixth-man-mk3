@@ -6,10 +6,12 @@ import type { YahooClient } from "./yahoo/client.ts";
 
 /** Saves the league everyone compares in. Only one of the admin's own NBA leagues is accepted. */
 export async function chooseLeague(
-  deps: { db: DatabaseSync; client: Pick<YahooClient, "get">; envLeagueKey: string | null; start: () => void },
+  deps: { db: DatabaseSync; client: Pick<YahooClient, "get">; envLeagueKey: string | null; isRunning: () => boolean; start: () => void },
   leagueKey: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (deps.envLeagueKey) return { ok: false, error: "LEAGUE_KEY is set in the environment." };
+  // Switching clears the tables; a running sync for the old league would write into them again.
+  if (deps.isRunning()) return { ok: false, error: "A sync is running. Try again when it finishes." };
   const mine = await getUserLeagues(deps.client);
   if (!mine.some((l) => l.leagueKey === leagueKey)) return { ok: false, error: "That isn't one of your NBA leagues." };
   pickLeague(deps.db, leagueKey);

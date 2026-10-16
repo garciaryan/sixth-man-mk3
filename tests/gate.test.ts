@@ -14,6 +14,7 @@ test("public paths pass without a session", () => {
 
 test("pages without a session go to login with next", () => {
   assert.deepEqual(gate({ path: "/players", session: null }, ctx), { kind: "redirect", location: "/login?next=%2Fplayers" });
+  assert.deepEqual(gate({ path: "/compare", search: "?p=a,b", session: null }, ctx), { kind: "redirect", location: "/login?next=%2Fcompare%3Fp%3Da%2Cb" });
 });
 
 test("APIs without a session get 401", () => {

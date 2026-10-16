@@ -1,7 +1,7 @@
 // Runs at most one sync at a time per process, and decides when a page visit should catch up. Server-side only.
 import { timingSafeEqual } from "node:crypto";
 import { yesterday } from "../dates.ts";
-import { getSyncState } from "../store.ts";
+import { getLeague, getSyncState } from "../store.ts";
 import { getService } from "../yahoo/auth-store.ts";
 import { runSync, lastRuns, type SyncDeps } from "./run.ts";
 
@@ -29,13 +29,17 @@ export function createWorker(makeDeps: MakeDeps) {
     const { db, leagueKey, now } = makeDeps();
     if (!leagueKey || getService(db)?.status !== "ok") return false;
     const last = getSyncState(db).lastDate;
-    if (last && last >= yesterday(now)) return false;
+    const y = yesterday(now);
+    const league = getLeague(db);
+    if (league && y < league.startDate) return false; // the season hasn't started
+    const target = league && league.endDate && league.endDate < y ? league.endDate : y; // or it's over
+    if (last && last >= target) return false;
     const recent = lastRuns(db, 1)[0];
     if (recent?.status === "error" && now.getTime() - recent.startedAt < RETRY_AFTER_ERROR_MS) return false;
     return startSync().started;
   }
 
-  return { startSync, maybeCatchUp, current: () => running ?? Promise.resolve() };
+  return { startSync, maybeCatchUp, isRunning: () => running !== null, current: () => running ?? Promise.resolve() };
 }
 
 /** POST /api/sync: bearer SYNC_TOKEN, compared in constant time. */

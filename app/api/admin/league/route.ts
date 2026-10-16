@@ -10,7 +10,7 @@ export async function POST(request: Request): Promise<Response> {
   const leagueKey = String((await request.formData()).get("leagueKey") ?? "");
   let q: string;
   try {
-    const r = await chooseLeague({ db: getDb(), client: serviceClient(), envLeagueKey: env.leagueKey, start: () => appWorker().startSync() }, leagueKey);
+    const r = await chooseLeague({ db: getDb(), client: serviceClient(), envLeagueKey: env.leagueKey, isRunning: () => appWorker().isRunning(), start: () => appWorker().startSync() }, leagueKey);
     q = r.ok ? "league=saved" : `error=${encodeURIComponent(r.error)}`;
   } catch (e) {
     q = `error=${encodeURIComponent(e instanceof Error ? e.message : "Couldn't reach Yahoo.")}`;
