@@ -5,6 +5,8 @@ import { readEnv } from "./lib/env.ts";
 import { readSession, SESSION_COOKIE } from "./lib/session.ts";
 import { getDb } from "./lib/db.ts";
 import { isSetupDone } from "./lib/setup.ts";
+import { getUser } from "./lib/store.ts";
+import { needsRecheck } from "./lib/signin.ts";
 
 export const config = { runtime: "nodejs", matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"] };
 
@@ -13,8 +15,15 @@ export async function middleware(req: NextRequest) {
   const secret = process.env.SESSION_SECRET ?? "";
   const session = secret ? await readSession(req.cookies.get(SESSION_COOKIE)?.value, secret, Date.now()) : null;
   const db = getDb();
+  const path = req.nextUrl.pathname;
+  // Once a day, a page visit re-runs sign-in so league membership is checked again.
+  if (session && !path.startsWith("/api/") && path !== "/login" && path !== "/denied" && needsRecheck(getUser(db, session.guid), Date.now())) {
+    const res = NextResponse.redirect(new URL(`/api/auth/start?next=${encodeURIComponent(path + req.nextUrl.search)}`, req.url));
+    res.cookies.delete(SESSION_COOKIE);
+    return res;
+  }
   const result = gate(
-    { path: req.nextUrl.pathname, session },
+    { path, session },
     { adminGuid: env.adminGuid, setupDone: isSetupDone(db, env.leagueKey) },
   );
   switch (result.kind) {

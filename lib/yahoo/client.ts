@@ -29,6 +29,8 @@ export function createClient(deps: {
   sleep?: (ms: number) => Promise<void>;
   now?: () => number;
   throttle?: Throttle;
+  /** A signed-in user's own token, used once at sign-in instead of the service connection. */
+  accessToken?: string;
 }): YahooClient {
   const fetchFn = deps.fetchFn ?? fetch;
   const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
@@ -36,6 +38,7 @@ export function createClient(deps: {
   const throttle = deps.throttle ?? sharedThrottle;
 
   async function token(): Promise<string> {
+    if (deps.accessToken) return deps.accessToken;
     const s = getService(deps.db);
     if (!s || s.status !== "ok") throw new NeedsReconnectError();
     if (s.expiresAt - now() >= REFRESH_EARLY_MS) return s.accessToken;
