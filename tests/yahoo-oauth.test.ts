@@ -52,3 +52,9 @@ test("fetchGuid reads sub and name from userinfo", async () => {
   assert.equal(s.calls[0].url, "https://api.login.yahoo.com/openid/v1/userinfo");
   assert.equal(s.calls[0].headers.authorization, "Bearer AT");
 });
+
+test("token errors carry Yahoo's status and description for the logs", async () => {
+  const s = stubFetch([json({ error: "invalid_client", error_description: "client authentication failed" }, 401)]);
+  await assert.rejects(exchangeCode(cfg, "C", s.fetch, 0), (e: unknown) =>
+    e instanceof YahooAuthError && /401/.test(e.message) && /invalid_client/.test(e.message) && /client authentication failed/.test(e.message));
+});

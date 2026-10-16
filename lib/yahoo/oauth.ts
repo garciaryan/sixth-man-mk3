@@ -33,11 +33,16 @@ async function tokenRequest(cfg: OAuthConfig, form: Record<string, string>, fetc
   });
   const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
-    if (body.error === "invalid_grant") throw new YahooAuthError("invalid_grant", "Yahoo no longer accepts this connection.");
-    throw new YahooAuthError("http", `Yahoo token request failed (${res.status}).`);
+    // Yahoo's own reason (never tokens), so a failed sign-in can be diagnosed from the server log.
+    const reason = [body.error, body.error_description].filter(Boolean).join(": ");
+    const detail = `Yahoo token request failed (${res.status})${reason ? `: ${reason}` : ""}`;
+    if (body.error === "invalid_grant") throw new YahooAuthError("invalid_grant", detail);
+    throw new YahooAuthError("http", detail);
   }
   const refreshToken = (body.refresh_token as string | undefined) ?? oldRefresh;
-  if (typeof body.access_token !== "string" || !refreshToken) throw new YahooAuthError("http", "Yahoo returned no token.");
+  if (typeof body.access_token !== "string" || !refreshToken) {
+    throw new YahooAuthError("http", `Yahoo returned no ${typeof body.access_token !== "string" ? "access" : "refresh"} token.`);
+  }
   return { accessToken: body.access_token, refreshToken, expiresAt: now + Number(body.expires_in ?? 3600) * 1000 };
 }
 

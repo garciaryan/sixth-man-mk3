@@ -27,13 +27,15 @@ export async function completeSignIn(
   let tokens: Tokens;
   try {
     tokens = await exchangeCode(cfg, code, fetchFn, now);
-  } catch {
+  } catch (e) {
+    console.error("sign-in: code exchange failed:", e instanceof Error ? e.message : e);
     return { kind: "error", code: "exchange" };
   }
   let who: { guid: string; name: string };
   try {
     who = await fetchGuid(tokens.accessToken, fetchFn);
-  } catch {
+  } catch (e) {
+    console.error("sign-in: userinfo failed:", e instanceof Error ? e.message : e);
     return { kind: "error", code: "userinfo" };
   }
   const isAdmin = adminGuid !== "" && who.guid === adminGuid;
@@ -45,7 +47,8 @@ export async function completeSignIn(
       const client = createClient({ db, cfg, fetchFn, accessToken: tokens.accessToken, throttle: deps.throttle });
       const teams = await getUserTeams(client);
       teamKey = teams.find((t) => t.teamKey.startsWith(`${leagueKey}.t.`))?.teamKey ?? null;
-    } catch {
+    } catch (e) {
+      console.error("sign-in: teams lookup failed:", e instanceof Error ? e.message : e);
       // The admin gets in without a team, so a Yahoo outage can't lock them out of setup.
       if (!isAdmin) return { kind: "error", code: "leagues" };
     }

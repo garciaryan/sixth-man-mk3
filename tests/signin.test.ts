@@ -83,3 +83,16 @@ test("membership is re-checked after 24 hours", () => {
   assert.equal(needsRecheck({ checkedAt: NOW }, NOW + RECHECK_MS), true);
   assert.equal(needsRecheck(null, NOW), true);
 });
+
+test("a failed exchange logs Yahoo's reason", async () => {
+  const logged: unknown[][] = [];
+  const orig = console.error;
+  console.error = (...a: unknown[]) => { logged.push(a); };
+  try {
+    const t = run("MEMBERGUID", { token: json({ error: "invalid_grant", error_description: "redirect_uri mismatch" }, 400) });
+    await t.result;
+  } finally {
+    console.error = orig;
+  }
+  assert.match(logged.map((a) => a.join(" ")).join("\n"), /redirect_uri mismatch/);
+});
