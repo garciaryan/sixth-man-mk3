@@ -7,6 +7,7 @@ import { getDb } from "./lib/db.ts";
 import { isSetupDone } from "./lib/setup.ts";
 import { getUser } from "./lib/store.ts";
 import { needsRecheck } from "./lib/signin.ts";
+import { appWorker } from "./lib/sync/app-worker.ts";
 
 export const config = { runtime: "nodejs", matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"] };
 
@@ -28,6 +29,14 @@ export async function middleware(req: NextRequest) {
   );
   switch (result.kind) {
     case "pass":
+      // A signed-in page visit after a missed nightly sync starts one in the background.
+      if (session && !path.startsWith("/api/")) {
+        try {
+          appWorker().maybeCatchUp();
+        } catch (e) {
+          console.error("catch-up check failed", e);
+        }
+      }
       return NextResponse.next();
     case "redirect":
       return NextResponse.redirect(new URL(result.location, req.url));
