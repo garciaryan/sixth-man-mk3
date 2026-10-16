@@ -117,3 +117,20 @@ test("without a GUID in the token response, a refused userinfo is a userinfo err
   const r = await completeSignIn({ db, cfg, leagueKey: "466.l.1001", adminGuid: "ADMINGUID", fetchFn: s.fetch, now: NOW, throttle: { nextAt: 0 } }, "CODE");
   assert.deepEqual(r, { kind: "error", code: "userinfo" });
 });
+
+test("with no admin configured, a turned-away sign-in logs the GUID to use", async () => {
+  const db = new DatabaseSync(":memory:");
+  migrate(db, migrations);
+  const s = stubFetch([json({ access_token: "UAT", refresh_token: "URT", expires_in: 3600, xoauth_yahoo_guid: "NEWGUID" })]);
+  const logged: string[] = [];
+  const orig = console.info;
+  console.info = (...a: unknown[]) => { logged.push(a.join(" ")); };
+  try {
+    const r = await completeSignIn({ db, cfg, leagueKey: null, adminGuid: "", fetchFn: s.fetch, now: NOW, throttle: { nextAt: 0 } }, "CODE");
+    assert.equal(r.kind, "denied");
+  } finally {
+    console.info = orig;
+  }
+  assert.match(logged.join("\n"), /ADMIN_YAHOO_GUID=NEWGUID/);
+  assert.equal(getUser(db, "NEWGUID"), null);
+});

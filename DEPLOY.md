@@ -18,8 +18,9 @@ syncs stats nightly.
 1. `cp .env.example .env.local` and fill in `YAHOO_CLIENT_ID`, `YAHOO_CLIENT_SECRET`, `SYNC_TOKEN`
    (any long random string), and `APP_URL=https://localhost:3000`.
 2. `npm run dev` (HTTPS with a self-signed certificate; accept the browser warning).
-3. Sign in once. Your GUID is in the `users` table: `sqlite3 data/sixth.db "select guid, name from users"`.
-   Put it in `ADMIN_YAHOO_GUID` and sign in again. That makes you admin and stores the Yahoo connection.
+3. Sign in once. You'll be turned away, and the server terminal prints
+   `sign-in: turned away …; if this is the admin, set ADMIN_YAHOO_GUID=<your GUID> and restart.` Put that value in
+   `.env.local`, restart `npm run dev`, and sign in again. That makes you admin and stores the Yahoo connection.
 4. On `/settings`, pick your league. The first sync starts.
 5. `npm run capture` saves real Yahoo responses into `tests/fixtures/`. Run `npm test` so the cross-check compares
    our points with Yahoo's, then commit the fixtures.

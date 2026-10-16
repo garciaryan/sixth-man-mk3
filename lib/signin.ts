@@ -59,7 +59,11 @@ export async function completeSignIn(
     }
   }
   // The admin always gets in (to fix setup); everyone else needs a team in the league.
-  if (!isAdmin && !teamKey) return { kind: "denied", leagueName };
+  if (!isAdmin && !teamKey) {
+    // First-time setup: the admin's GUID isn't known yet, so say what to set (the GUID is only an account id).
+    if (!adminGuid) console.info(`sign-in: turned away ${who.name}; if this is the admin, set ADMIN_YAHOO_GUID=${who.guid} and restart.`);
+    return { kind: "denied", leagueName };
+  }
 
   upsertUser(db, { guid: who.guid, name: who.name, teamKey, checkedAt: now });
   if (isAdmin) saveService(db, who.guid, tokens);
