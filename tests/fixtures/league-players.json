@@ -1,0 +1,10 @@
+{ "_handmade": true, "fantasy_content": { "league": [ { "league_key": "466.l.1001" }, { "players": {
+  "0": { "player": [ [ { "player_key": "466.p.6583" }, { "player_id": "6583" }, { "name": { "full": "Luka Doncic", "first": "Luka", "last": "Doncic" } },
+         { "editorial_team_abbr": "LAL" }, { "display_position": "PG,SG" },
+         { "eligible_positions": [ { "position": "PG" }, { "position": "SG" }, { "position": "G" }, { "position": "Util" } ] } ],
+         { "ownership": { "ownership_type": "team", "owner_team_key": "466.l.1001.t.3", "owner_team_name": "Garcia Guards" } } ] },
+  "1": { "player": [ [ { "player_key": "466.p.5352" }, { "player_id": "5352" }, { "name": { "full": "Nikola Jokic" } },
+         { "status": "GTD", "status_full": "Game Time Decision" }, [], { "editorial_team_abbr": "DEN" },
+         { "eligible_positions": [ { "position": "C" }, { "position": "Util" } ] } ],
+         { "ownership": { "ownership_type": "freeagents" } } ] },
+  "count": 2 } } ] } }

@@ -1,0 +1,5 @@
+{ "_handmade": true, "fantasy_content": { "users": { "0": { "user": [ { "guid": "ADMINGUID" }, { "games": { "0": { "game": [
+  { "game_key": "466", "code": "nba", "season": "2026" },
+  { "leagues": { "0": { "league": [ { "league_key": "466.l.1001", "name": "Hoops League", "season": "2026", "scoring_type": "point" } ] },
+                 "1": { "league": [ { "league_key": "466.l.2002", "name": "Other League", "season": "2026", "scoring_type": "head" } ] },
+                 "count": 2 } } ] }, "count": 1 } } ] }, "count": 1 } } }

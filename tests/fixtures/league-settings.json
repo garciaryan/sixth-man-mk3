@@ -1,0 +1,21 @@
+{ "_handmade": true, "fantasy_content": { "league": [
+  { "league_key": "466.l.1001", "name": "Hoops League", "season": "2026", "start_date": "2026-10-20", "end_date": "2027-04-12", "scoring_type": "point" },
+  { "settings": [ {
+      "stat_categories": { "stats": [
+        { "stat": { "stat_id": 9004003, "enabled": "1", "name": "Field Goals Made / Field Goals Attempted", "display_name": "FGM/A", "is_only_display_stat": "1" } },
+        { "stat": { "stat_id": 12, "enabled": "1", "name": "Points Scored", "display_name": "PTS" } },
+        { "stat": { "stat_id": 15, "enabled": "1", "name": "Total Rebounds", "display_name": "REB" } },
+        { "stat": { "stat_id": 16, "enabled": "1", "name": "Assists", "display_name": "AST" } },
+        { "stat": { "stat_id": 17, "enabled": "1", "name": "Steals", "display_name": "ST" } },
+        { "stat": { "stat_id": 18, "enabled": "1", "name": "Blocked Shots", "display_name": "BLK" } },
+        { "stat": { "stat_id": 19, "enabled": "1", "name": "Turnovers", "display_name": "TO" } }
+      ] },
+      "stat_modifiers": { "stats": [
+        { "stat": { "stat_id": 12, "value": "1" } },
+        { "stat": { "stat_id": 15, "value": "1.2" } },
+        { "stat": { "stat_id": 16, "value": "1.5" } },
+        { "stat": { "stat_id": 17, "value": "3" } },
+        { "stat": { "stat_id": 18, "value": "3" } },
+        { "stat": { "stat_id": 19, "value": "-1" } }
+      ] }
+  } ] } ] } }

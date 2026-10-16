@@ -1,0 +1,5 @@
+{ "_handmade": true, "fantasy_content": { "users": { "0": { "user": [ { "guid": "ADMINGUID" }, { "games": { "0": { "game": [
+  { "game_key": "466", "code": "nba", "season": "2026" },
+  { "teams": { "0": { "team": [ [ { "team_key": "466.l.1001.t.3" }, { "team_id": "3" }, { "name": "Garcia Guards" } ] ] },
+               "1": { "team": [ [ { "team_key": "466.l.2002.t.7" }, { "team_id": "7" }, { "name": "Elsewhere" } ] ] },
+               "count": 2 } } ] }, "count": 1 } } ] }, "count": 1 } } }

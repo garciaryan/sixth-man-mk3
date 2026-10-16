@@ -1,0 +1,7 @@
+{ "_handmade": true, "fantasy_content": { "league": [ { "league_key": "466.l.1001" }, { "teams": {
+  "0": { "team": [ [ { "team_key": "466.l.1001.t.3" }, { "team_id": "3" }, { "name": "Garcia Guards" }, [],
+         { "managers": [ { "manager": { "manager_id": "3", "nickname": "Ryan", "guid": "ADMINGUID" } } ] } ] ] },
+  "1": { "team": [ [ { "team_key": "466.l.1001.t.4" }, { "team_id": "4" }, { "name": "Paint Patrol" },
+         { "managers": [ { "manager": { "manager_id": "4", "nickname": "Sam", "guid": "MEMBERGUID" } },
+                         { "manager": { "manager_id": "5", "nickname": "Co", "guid": "COGUID", "is_comanager": "1" } } ] } ] ] },
+  "count": 2 } } ] } }

@@ -1,0 +1,14 @@
+{ "_handmade": true, "fantasy_content": { "league": [ { "league_key": "466.l.1001" }, { "players": {
+  "0": { "player": [ [ { "player_key": "466.p.6583" }, { "player_id": "6583" }, { "name": { "full": "Luka Doncic" } } ],
+         { "player_stats": { "coverage_type": "date", "date": "2026-10-21", "stats": [
+           { "stat": { "stat_id": "9004003", "value": "11/22" } }, { "stat": { "stat_id": "12", "value": "34" } },
+           { "stat": { "stat_id": "15", "value": "9" } }, { "stat": { "stat_id": "16", "value": "11" } },
+           { "stat": { "stat_id": "17", "value": "-" } }, { "stat": { "stat_id": "18", "value": "1" } },
+           { "stat": { "stat_id": "19", "value": "4" } } ] } } ] },
+  "1": { "player": [ [ { "player_key": "466.p.5352" }, { "player_id": "5352" }, { "name": { "full": "Nikola Jokic" } } ],
+         { "player_stats": { "coverage_type": "date", "date": "2026-10-21", "stats": [
+           { "stat": { "stat_id": "9004003", "value": "-/-" } }, { "stat": { "stat_id": "12", "value": "-" } },
+           { "stat": { "stat_id": "15", "value": "" } }, { "stat": { "stat_id": "16", "value": "-" } },
+           { "stat": { "stat_id": "17", "value": "-" } }, { "stat": { "stat_id": "18", "value": "-" } },
+           { "stat": { "stat_id": "19", "value": "-" } } ] } } ] },
+  "count": 2 } } ] } }
