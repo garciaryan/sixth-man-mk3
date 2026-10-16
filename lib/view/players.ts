@@ -1,6 +1,6 @@
 // The ranked players table: query parsing, filtering, sorting and ranking. Pure.
 import { isWindowId, type WindowId } from "../dates.ts";
-import { aggregate, type Aggregate, type GameRow, type StatMap } from "../scoring.ts";
+import { aggregate, fantasyPoints, type Aggregate, type GameRow, type StatMap } from "../scoring.ts";
 import type { Player, Team } from "../yahoo/parse.ts";
 
 export const POSITIONS = ["PG", "SG", "G", "SF", "PF", "F", "C"];
@@ -82,3 +82,8 @@ export function buildRows(
   return rows;
 }
 
+
+/** One player's games, newest first, with each game's fantasy points. */
+export function gameLogRows(games: GameRow[], modifiers: StatMap): (GameRow & { fpts: number })[] {
+  return [...games].sort((a, b) => b.date.localeCompare(a.date)).map((g) => ({ ...g, fpts: fantasyPoints(g.stats, modifiers) }));
+}
